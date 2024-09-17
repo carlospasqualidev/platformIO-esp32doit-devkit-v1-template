@@ -12,11 +12,11 @@ bool debounce(int pin, unsigned long delay)
 
     static unsigned long lastTime = 0;
     static bool lastState = 0;
-    unsigned long currentMillis = millis();
+    unsigned long currentMillis = xTaskGetTickCount() * portTICK_PERIOD_MS;
 
     if (currentState != lastState)
     {
-        lastTime = currentMillis;
+        lastTime = 0;
     }
 
     if ((currentMillis - lastTime) > delay)
@@ -38,6 +38,8 @@ void app_main(void)
     while (1)
     {
 
-        gpio_set_level(LED_PIN, debounce(BUTTON_PIN, 20) ? 1 : 0);
+        gpio_set_level(LED_PIN, debounce(BUTTON_PIN, 20) ? 0 : 1);
+
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
