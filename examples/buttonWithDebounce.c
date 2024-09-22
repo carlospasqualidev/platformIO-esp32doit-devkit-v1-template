@@ -8,7 +8,7 @@
 
 bool debounce(int pin, unsigned long delay)
 {
-    bool currentState = gpio_get_level(BUTTON_PIN);
+    bool currentState = gpio_get_level(pin);
 
     static unsigned long lastTime = 0;
     static bool lastState = 0;
