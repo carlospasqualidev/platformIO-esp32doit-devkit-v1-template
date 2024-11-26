@@ -1,74 +1,38 @@
-// CARLOS PASQUALI, HENRIQUE JOCHEM
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "driver/pcnt.h"
-#include "driver/gpio.h"
+#include "pcnt_library.h"
+#include "esp_log.h"
 
-// ENCODER
-#define PCNT_INPUT_SIG_IO 4  // Pino de entrada do sinal de pulso
-#define PCNT_CTRL_IO 5       // Pino de controle do contador
-#define PCNT_H_LIM_VAL 1000  // Limite superior de contagem
-#define PCNT_L_LIM_VAL -1000 // Limite inferior de contagem
-int16_t count = 0;
+static const char *TAG = "MAIN";
 
-void config_pulse_counter()
-{
-    // Configurações iniciais para o contador de pulsos
-    pcnt_config_t pcnt_config = {
-        .pulse_gpio_num = PCNT_INPUT_SIG_IO, // Pino de entrada de pulsos
-        .ctrl_gpio_num = PCNT_CTRL_IO,       // Pino de controle
-        .channel = PCNT_CHANNEL_0,           // Canal do contador
-        .unit = PCNT_UNIT_0,                 // Unidade do contador
-        .pos_mode = PCNT_COUNT_INC,          // Contagem positiva (borda de subida)
-        .neg_mode = PCNT_COUNT_DIS,          // Desabilitar contagem negativa (borda de descida)
-        .counter_h_lim = PCNT_H_LIM_VAL,     // Limite superior
-        .counter_l_lim = PCNT_L_LIM_VAL,     // Limite inferior
-        .lctrl_mode = PCNT_MODE_KEEP,        // Mantém o estado se o pino de controle estiver em nível baixo
-        .hctrl_mode = PCNT_MODE_REVERSE      // Mantém o estado se o pino de controle estiver em nível alto
-    };
+#include "st7789.h"
 
-    // Configuração do contador
-    pcnt_unit_config(&pcnt_config);
-    // Inicializa o contador, pausa, e reseta para zero
-    pcnt_counter_pause(PCNT_UNIT_0); // Pausar o contador
-    pcnt_counter_clear(PCNT_UNIT_0); // Limpar o valor do contador
-    // Definir o limite de eventos do contador (opcional)
-    pcnt_set_event_value(PCNT_UNIT_0, PCNT_EVT_H_LIM, PCNT_H_LIM_VAL); // Evento no limite superior
-    // Reinicia a contagem
-    pcnt_counter_resume(PCNT_UNIT_0); // Retomar a contagem de pulsos
-}
-
-// FAN
-#define FAN 23 // Pino onde o LED está conectado
+#define ENCODER_GPIO_A 4
+#define ENCODER_GPIO_B 5
+pcnt_handle_t pcnt_handle;
+int watch_points[] = {PCNT_LOW_LIMIT, -50, 0, 50, PCNT_HIGH_LIMIT};
+int pulse_count = 0;
+int event_count = 0;
 
 void setup()
 {
-    // FAN
-    gpio_reset_pin(FAN);
-    gpio_set_direction(FAN, GPIO_MODE_OUTPUT);
-
     // ENCODER
-    config_pulse_counter();
+    ESP_ERROR_CHECK(pcnt_library_init(&pcnt_handle, ENCODER_GPIO_A, ENCODER_GPIO_B, watch_points, sizeof(watch_points) / sizeof(watch_points[0])));
 }
 
-void app_main()
+void app_main(void)
 {
-    // ENCODER
+    setup();
 
     while (1)
     {
         // ENCODER
-        //  Ler o valor atual do contador
-        pcnt_get_counter_value(PCNT_UNIT_0, &count);
-        printf("Valor do encoder: %d\n", count);
-        // Delay para a próxima leitura (por exemplo, a cada segundo)
-        vTaskDelay(pdMS_TO_TICKS(1000));
-
-        // FAN
-        gpio_set_level(FAN, 1);
-        // vTaskDelay(5000 / portTICK_PERIOD_MS);
-        // gpio_set_level(FAN, 0);
-        // vTaskDelay(5000 / portTICK_PERIOD_MS);
+        if (pcnt_library_wait_event(&pcnt_handle, &event_count, pdMS_TO_TICKS(1000)))
+        {
+            ESP_LOGI(TAG, "Watch point event, count: %d", event_count);
+        }
+        else
+        {
+            ESP_ERROR_CHECK(pcnt_library_get_count(&pcnt_handle, &pulse_count));
+            ESP_LOGI(TAG, "Pulse count: %d", pulse_count);
+        }
     }
 }
