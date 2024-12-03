@@ -4,7 +4,9 @@
     "stdio.h": "c",
     "task.h": "c",
     "st7789.h": "c",
-    "pcnt.h": "c"
+    "pcnt.h": "c",
+    "freertos.h": "c",
+    "set": "c"
   },
   "C_Cpp.errorSquiggles": "enabled"
 }
