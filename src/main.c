@@ -16,7 +16,7 @@ int watch_points[] = {PCNT_LOW_LIMIT, -50, 0, 50, PCNT_HIGH_LIMIT};
 int pulse_count = 0;
 int event_count = 0;
 
-// bool last_button_state = 0;
+bool last_button_state = 0;
 int menu_option = 0;
 int last_pulse_count = 0;
 int first_option = 0;
@@ -50,17 +50,17 @@ void get_menu_option()
     last_pulse_count = pulse_count;
 }
 
-// void get_button_click()
-// {
+void get_button_click()
+{
 
-//     int new_button_state = gpio_get_level(ENCODER_GPIO_BUTTON);
+    int new_button_state = gpio_get_level(ENCODER_GPIO_BUTTON);
 
-//     if (new_button_state == 0 && new_button_state != last_button_state)
-//     {
-//         ESP_LOGI(TAG, "button_state");
-//     }
-//     last_button_state = new_button_state;
-// }
+    if (new_button_state == 0 && new_button_state != last_button_state)
+    {
+        ESP_LOGI(TAG, "button_click");
+    }
+    last_button_state = new_button_state;
+}
 
 // NTC
 #define NTC_GPIO 23
@@ -110,7 +110,6 @@ void get_temperature_NTC() // leitura da temperatura do sensor extrusora
 void set_NTC_EXT()
 {
     get_temperature_NTC();
-
     gpio_set_level(NTC_EXT, NTC_temp > 250 ? 0 : 1); // liga e desliga a temperatura da extrusora para manter 250°C
 }
 
@@ -136,7 +135,7 @@ void app_main(void)
 
     while (1)
     {
-        // get_button_click();
+        get_button_click();
         get_menu_option();
 
         set_NTC_EXT();
